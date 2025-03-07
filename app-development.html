@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenUI - 应用开发</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #ffffff;
+            color: #333;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .chat-bubble {
+            border-radius: 18px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+        }
+        .user-bubble {
+            background-color: #f0f0f0;
+            margin-left: auto;
+            border-top-right-radius: 4px;
+        }
+        .ai-bubble {
+            background-color: #eef6ff;
+            margin-right: auto;
+            border-top-left-radius: 4px;
+        }
+        .system-bubble {
+            background-color: #f8f9fa;
+            margin: 0 auto;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #6c757d;
+            padding: 8px 16px;
+        }
+        .preview-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+        .preview-mobile {
+            max-width: 375px;
+            height: 667px;
+            margin: 0 auto;
+            border: 12px solid #f0f0f0;
+            border-radius: 36px;
+            overflow: hidden;
+        }
+        .code-editor {
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            line-height: 1.5;
+            tab-size: 4;
+        }
+        .file-item {
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .file-item:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+        .file-item.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+        .resize-handle {
+            width: 4px;
+            background-color: #f0f0f0;
+            cursor: col-resize;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            z-index: 1000;
+            transition: background-color 0.2s;
+        }
+        
+        .resize-handle:hover,
+        .resize-handle.active {
+            background-color: #ddd;
+        }
+        .tab {
+            padding: 8px 16px;
+            font-size: 14px;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+        }
+        .tab.active {
+            border-bottom-color: #3b82f6;
+            color: #3b82f6;
+        }
+        .collapsible-section {
+            transition: all 0.3s ease;
+        }
+        .artifact-card {
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .artifact-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .thinking-dots {
+            display: inline-block;
+        }
+        .thinking-dots::after {
+            content: '...';
+            animation: thinking 1.5s infinite;
+        }
+        @keyframes thinking {
+            0% { content: '.'; }
+            33% { content: '..'; }
+            66% { content: '...'; }
+        }
+        .action-icon {
+            color: #6b7280;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .action-icon:hover {
+            color: #3b82f6;
+        }
+        /* 添加以下滚动条样式 */
+        #chat-messages {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+        
+        #chat-messages::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+        
+        /* 确保chat-panel和整体容器有正确的定位 */
+        #chat-panel {
+            position: relative;
+            overflow: hidden;
+            min-width: 200px;
+            flex-shrink: 0;
+        }
+        
+        /* 右侧内容区域的样式 */
+        .right-panel {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .flex.h-full {
+            position: relative;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div class="flex h-full">
+        <!-- 左侧对话面板 -->
+        <div class="border-r border-gray-200 flex flex-col h-full" id="chat-panel" style="width: 33.333%;">
+            <!-- 头部工具栏 -->
+            <div class="flex items-center justify-between p-3 border-b border-gray-200">
+                <div class="flex items-center">
+                    <button class="p-2 hover:bg-gray-100 rounded-lg" id="toggle-chat">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="ml-2 font-medium">商机管理系统</span>
+                </div>
+                <div class="flex items-center">
+                    <button class="p-2 text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-expand-alt"></i>
+                    </button>
+                    <button class="p-2 text-gray-500 hover:text-gray-700 ml-1">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 对话内容区 -->
+            <div class="flex-1 overflow-y-auto p-4" id="chat-messages">
+                <!-- 用户消息 -->
+                <div class="chat-bubble user-bubble">
+                    <p>我想开发一个商机管理系统，具备商机信息录入管理及销售漏斗可视化展示功能</p>
+                </div>
+                
+                <!-- AI 消息 -->
+                <div class="chat-bubble ai-bubble">
+                    <p>让我们开始规划功能和界面结构：</p>
+                    <ol class="list-decimal pl-5 mt-2 space-y-1">
+                        <li>首页/仪表盘</li>
+                        <li>商机列表</li>
+                        <li>商机详情</li>
+                        <li>数据分析</li>
+                    </ol>
+                </div>
+                
+                <!-- AI 消息 - 带应用制品区块 -->
+                <div class="chat-bubble ai-bubble">
+                    <p>我已经创建了基本的应用架构和关键文件。现在您可以查看以下生成的文件：</p>
+                    
+                    <!-- 应用制品区块 -->
+                    <div class="mt-3 p-3 bg-white border border-gray-200 rounded-lg">
+                        <div class="font-medium mb-2">✅ 创建商机管理系统</div>
+                        <div class="text-sm text-gray-600 mb-2">已生成 5 个文件</div>
+                        <div class="space-y-2">
+                            <div class="artifact-card px-3 py-2 bg-gray-50 border border-gray-200 flex items-center">
+                                <i class="fas fa-file-code text-blue-500 mr-2"></i>
+                                <span class="text-sm">index.html</span>
+                            </div>
+                            <div class="artifact-card px-3 py-2 bg-gray-50 border border-gray-200 flex items-center">
+                                <i class="fas fa-file-code text-blue-500 mr-2"></i>
+                                <span class="text-sm">dashboard.js</span>
+                            </div>
+                            <div class="artifact-card px-3 py-2 bg-gray-50 border border-gray-200 flex items-center">
+                                <i class="fas fa-file-code text-blue-500 mr-2"></i>
+                                <span class="text-sm">leads.js</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 用户消息 -->
+                <div class="chat-bubble user-bubble">
+                    <p>能否在首页添加一个今日新增商机的数量统计？</p>
+                </div>
+                
+                <!-- AI 消息 - 带思考动效 -->
+                <div class="chat-bubble ai-bubble">
+                    <p>我正在分析如何最好地实现这个功能<span class="thinking-dots"></span></p>
+                </div>
+                
+                <!-- AI 消息 - 带工具调用区块 -->
+                <div class="chat-bubble ai-bubble">
+                    <p>好的，我会在首页仪表盘添加今日新增商机的数量统计。为此，我需要修改以下文件：</p>
+                    
+                    <!-- 工具调用区块 -->
+                    <div class="mt-3 p-3 bg-white border border-gray-200 rounded-lg">
+                        <div class="font-medium mb-2">🔍 查找仪表盘相关代码</div>
+                        <div class="text-sm bg-gray-50 p-2 font-mono text-gray-700 overflow-x-auto">
+                            Searching for "dashboard" in src/components...
+                        </div>
+                    </div>
+                    
+                    <p class="mt-3">我需要在 dashboard.js 文件中添加一个新的卡片组件来显示今日新增商机数量。</p>
+                </div>
+                
+                <!-- AI 消息 - 带人工确认区块 -->
+                <div class="chat-bubble ai-bubble">
+                    <p>我将在仪表盘页面添加一个新的数据卡片，用于显示今日新增商机数量。请确认以下布局：</p>
+                    
+                    <!-- 人工确认区块 -->
+                    <div class="mt-3 p-3 bg-white border border-gray-200 rounded-lg">
+                        <div class="font-medium mb-2">👋 请选择布局偏好</div>
+                        <div class="text-sm mb-3">新的统计卡片应该放在仪表盘的什么位置？</div>
+                        <div class="flex space-x-2">
+                            <button class="bg-blue-600 text-white px-3 py-1 rounded-md text-sm">左上角</button>
+                            <button class="bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-md text-sm">顶部中间</button>
+                            <button class="bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-md text-sm">右上角</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 输入框区域 -->
+            <div class="border-t border-gray-200 p-3">
+                <div class="relative">
+                    <textarea class="w-full border border-gray-300 rounded-lg p-2 pr-24 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none" 
+                            placeholder="请输入消息..." rows="2"></textarea>
+                    <div class="absolute right-2 bottom-2 flex items-center space-x-2">
+                        <button class="text-gray-500 hover:text-gray-700 action-icon">
+                            <i class="fas fa-image"></i>
+                        </button>
+                        <button class="text-gray-500 hover:text-gray-700 action-icon ml-1">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center">
+                            <i class="fas fa-paper-plane text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 调整大小手柄 -->
+        <div class="resize-handle" id="resize-handle"></div>
+
+        <!-- 右侧编程界面和预览 -->
+        <div class="right-panel flex flex-col h-full">
+            <!-- 顶部标签栏 -->
+            <div class="border-b border-gray-200">
+                <div class="flex items-center">
+                    <div class="tab active">代码</div>
+                    <div class="tab">预览</div>
+                    <div class="ml-auto pr-4 flex items-center">
+                        <button class="p-2 text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="p-2 text-gray-500 hover:text-gray-700 ml-1">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主要内容区 -->
+            <div class="flex-1 flex">
+                <!-- 左侧文件树 -->
+                <div class="w-56 border-r border-gray-200 bg-gray-50 overflow-y-auto p-2">
+                    <div class="mb-3">
+                        <div class="flex items-center justify-between mb-1 px-2">
+                            <span class="text-sm font-medium text-gray-700">项目文件</span>
+                            <button class="text-xs text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="file-item">
+                                <i class="fas fa-folder-open text-yellow-500 mr-2"></i>
+                                <span>src</span>
+                            </div>
+                            <div class="pl-4">
+                                <div class="file-item">
+                                    <i class="fas fa-folder text-yellow-500 mr-2"></i>
+                                    <span>components</span>
+                                </div>
+                                <div class="pl-4">
+                                    <div class="file-item active">
+                                        <i class="fas fa-file-code text-blue-500 mr-2"></i>
+                                        <span>Dashboard.jsx</span>
+                                    </div>
+                                    <div class="file-item">
+                                        <i class="fas fa-file-code text-blue-500 mr-2"></i>
+                                        <span>LeadsList.jsx</span>
+                                    </div>
+                                    <div class="file-item">
+                                        <i class="fas fa-file-code text-blue-500 mr-2"></i>
+                                        <span>LeadDetail.jsx</span>
+                                    </div>
+                                </div>
+                                <div class="file-item">
+                                    <i class="fas fa-folder text-yellow-500 mr-2"></i>
+                                    <span>utils</span>
+                                </div>
+                            </div>
+                            <div class="file-item">
+                                <i class="fas fa-file-code text-orange-400 mr-2"></i>
+                                <span>index.html</span>
+                            </div>
+                            <div class="file-item">
+                                <i class="fas fa-file-code text-green-500 mr-2"></i>
+                                <span>package.json</span>
+                            </div>
+                            <div class="file-item">
+                                <i class="fas fa-file text-gray-500 mr-2"></i>
+                                <span>README.md</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧代码编辑器 -->
+                <div class="flex-1 overflow-hidden">
+                    <!-- 编辑器顶部文件标签 -->
+                    <div class="bg-gray-100 border-b border-gray-200 px-3 py-1 flex items-center">
+                        <div class="flex items-center bg-white rounded px-3 py-1 text-sm border border-gray-300">
+                            <i class="fas fa-file-code text-blue-500 mr-2"></i>
+                            <span>Dashboard.jsx</span>
+                            <button class="ml-2 text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 代码区域 -->
+                    <div class="h-full overflow-auto p-4 bg-white code-editor">
+<pre class="text-sm">
+import React, { useState, useEffect } from 'react';
+import { Card, Row, Col, Statistic, Progress } from 'antd';
+import { PieChart, Pie, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { UserOutlined, DollarOutlined, FunnelPlotOutlined } from '@ant-design/icons';
+
+const data = [
+  { name: '初次接触', value: 400, color: '#0088FE' },
+  { name: '需求确认', value: 300, color: '#00C49F' },
+  { name: '方案制定', value: 200, color: '#FFBB28' },
+  { name: '商务谈判', value: 150, color: '#FF8042' },
+  { name: '合同签订', value: 100, color: '#8884d8' },
+];
+
+const Dashboard = () => {
+  const [leadStats, setLeadStats] = useState({
+    total: 1150,
+    active: 620,
+    conversion: 32,
+    value: 845600
+  });
+
+  return (
+    <div className="dashboard-container">
+      <h1 className="page-title">销售仪表盘</h1>
+      
+      {/* 统计卡片 */}
+      <Row gutter={16} className="stats-row">
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="商机总数"
+              value={leadStats.total}
+              prefix={<UserOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="活跃商机"
+              value={leadStats.active}
+              prefix={<FunnelPlotOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="转化率"
+              value={leadStats.conversion}
+              suffix="%"
+            />
+            <Progress percent={leadStats.conversion} showInfo={false} />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="预计价值"
+              value={leadStats.value}
+              prefix={<DollarOutlined />}
+              precision={2}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* 图表区域 */}
+      <Row gutter={16} className="chart-row">
+        <Col span={12}>
+          <Card title="销售漏斗">
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={data}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                  label
+                >
+                  {data.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </Card>
+        </Col>
+        <Col span={12}>
+          <Card title="按阶段商机数量">
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart
+                data={data}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="value" name="商机数量">
+                  {data.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
+        </Col>
+      </Row>
+    </div>
+  );
+};
+
+export default Dashboard;
+</pre>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 底部预览区域（默认隐藏） -->
+            <div class="border-t border-gray-200 h-1/2 bg-gray-50 hidden" id="preview-area">
+                <div class="flex items-center justify-between p-2 border-b border-gray-200">
+                    <div class="flex items-center">
+                        <button class="p-1 text-gray-500 hover:text-gray-700 border border-gray-300 rounded mr-2">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <button class="p-1 text-gray-500 hover:text-gray-700 border border-gray-300 rounded mr-2">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                        <button class="p-1 text-gray-500 hover:text-gray-700 border border-gray-300 rounded mr-2" id="refresh-preview">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <div class="border border-gray-300 rounded px-2 py-1 text-sm flex-1 bg-white flex items-center">
+                            <i class="fas fa-globe text-gray-400 mr-2"></i>
+                            <span class="text-gray-700">/dashboard</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <button class="px-3 py-1 bg-blue-50 text-blue-600 border border-blue-200 rounded-l text-xs" id="mobile-view">
+                            <i class="fas fa-mobile-alt mr-1"></i> 移动端
+                        </button>
+                        <button class="px-3 py-1 bg-white text-gray-600 border border-gray-300 rounded-r text-xs" id="desktop-view">
+                            <i class="fas fa-desktop mr-1"></i> 桌面端
+                        </button>
+                        <button class="ml-2 px-3 py-1 bg-white text-gray-600 border border-gray-300 rounded text-xs" id="new-window">
+                            <i class="fas fa-external-link-alt mr-1"></i> 新窗口
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4 flex justify-center items-start h-full overflow-auto">
+                    <div class="preview-mobile" id="preview-container">
+                        <iframe src="preview-example.html" class="preview-frame" id="preview-frame"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 只是原型演示用
+        document.getElementById('toggle-chat').addEventListener('click', function() {
+            const chatPanel = document.getElementById('chat-panel');
+            if (chatPanel.classList.contains('w-1/3')) {
+                chatPanel.classList.remove('w-1/3');
+                chatPanel.classList.add('w-12');
+                this.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            } else {
+                chatPanel.classList.remove('w-12');
+                chatPanel.classList.add('w-1/3');
+                this.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            }
+        });
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                const previewArea = document.getElementById('preview-area');
+                if (this.textContent.trim() === '预览') {
+                    previewArea.classList.remove('hidden');
+                } else {
+                    previewArea.classList.add('hidden');
+                }
+            });
+        });
+
+        // 改进左侧面板拖动调整大小功能
+        const resizeHandle = document.getElementById('resize-handle');
+        const chatPanel = document.getElementById('chat-panel');
+        const rightPanel = document.querySelector('.right-panel');
+        
+        let isResizing = false;
+        
+        // 初始化resize-handle位置
+        function updateResizeHandlePosition() {
+            const panelRect = chatPanel.getBoundingClientRect();
+            resizeHandle.style.left = panelRect.right - 4 + 'px';
+        }
+        
+        // 页面加载时更新位置
+        document.addEventListener('DOMContentLoaded', updateResizeHandlePosition);
+        // 窗口调整大小时更新位置
+        window.addEventListener('resize', updateResizeHandlePosition);
+        
+        resizeHandle.addEventListener('mousedown', function(e) {
+            isResizing = true;
+            e.preventDefault(); // 防止选中文本
+            resizeHandle.classList.add('active');
+            document.addEventListener('mousemove', resize);
+            document.addEventListener('mouseup', stopResize);
+            
+            // 添加一个全屏覆盖层以捕获所有鼠标事件
+            const overlay = document.createElement('div');
+            overlay.id = 'resize-overlay';
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.right = '0';
+            overlay.style.bottom = '0';
+            overlay.style.zIndex = '999';
+            overlay.style.cursor = 'col-resize';
+            document.body.appendChild(overlay);
+        });
+        
+        function resize(e) {
+            if (!isResizing) return;
+            
+            let newWidth = e.clientX;
+            
+            // 设置最小宽度为200px，最大宽度为屏幕的60%
+            if (newWidth > 200 && newWidth < window.innerWidth * 0.6) {
+                // 使用百分比而不是固定像素
+                const percentage = (newWidth / window.innerWidth) * 100;
+                chatPanel.style.width = percentage + '%';
+                resizeHandle.style.left = newWidth + 'px';
+            }
+        }
+        
+        function stopResize() {
+            if (!isResizing) return;
+            
+            isResizing = false;
+            resizeHandle.classList.remove('active');
+            document.removeEventListener('mousemove', resize);
+            document.removeEventListener('mouseup', stopResize);
+            
+            // 移除覆盖层
+            const overlay = document.getElementById('resize-overlay');
+            if (overlay) {
+                document.body.removeChild(overlay);
+            }
+            
+            // 重新调整右侧面板大小
+            rightPanel.style.width = (100 - parseFloat(chatPanel.style.width)) + '%';
+        }
+
+        // 预览区域功能
+        document.getElementById('refresh-preview').addEventListener('click', function() {
+            const previewFrame = document.getElementById('preview-frame');
+            previewFrame.src = previewFrame.src;
+        });
+
+        document.getElementById('mobile-view').addEventListener('click', function() {
+            const container = document.getElementById('preview-container');
+            this.classList.replace('bg-white', 'bg-blue-50');
+            this.classList.replace('text-gray-600', 'text-blue-600');
+            this.classList.replace('border-gray-300', 'border-blue-200');
+            
+            document.getElementById('desktop-view').classList.replace('bg-blue-50', 'bg-white');
+            document.getElementById('desktop-view').classList.replace('text-gray-600', 'text-blue-600');
+            document.getElementById('desktop-view').classList.replace('border-blue-200', 'border-gray-300');
+            
+            container.className = 'preview-mobile';
+        });
+
+        document.getElementById('desktop-view').addEventListener('click', function() {
+            const container = document.getElementById('preview-container');
+            this.classList.replace('bg-white', 'bg-blue-50');
+            this.classList.replace('text-gray-600', 'text-blue-600');
+            this.classList.replace('border-gray-300', 'border-blue-200');
+            
+            document.getElementById('mobile-view').classList.replace('bg-blue-50', 'bg-white');
+            document.getElementById('mobile-view').classList.replace('text-blue-600', 'text-gray-600');
+            document.getElementById('mobile-view').classList.replace('border-blue-200', 'border-gray-300');
+            
+            container.className = 'w-full h-full';
+        });
+
+        document.getElementById('new-window').addEventListener('click', function() {
+            window.open('preview-example.html', '_blank');
+        });
+    </script>
+</body>
+</html> 

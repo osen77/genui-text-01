@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenUI - 首页</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #ffffff;
+            color: #333;
+            height: 100vh;
+        }
+        .chat-bubble {
+            border-radius: 18px;
+            padding: 12px 16px;
+            max-width: 80%;
+            margin-bottom: 12px;
+        }
+        .user-bubble {
+            background-color: #f0f0f0;
+            margin-left: auto;
+            border-top-right-radius: 4px;
+        }
+        .ai-bubble {
+            background-color: #eef6ff;
+            margin-right: auto;
+            border-top-left-radius: 4px;
+        }
+        .app-card {
+            transition: all 0.2s ease;
+        }
+        .app-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .model-selector {
+            border-radius: 20px;
+        }
+        .example-card {
+            border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+        .example-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .resize-handle {
+            width: 4px;
+            background-color: #f0f0f0;
+            cursor: col-resize;
+        }
+        .resize-handle:hover {
+            background-color: var(--primary-color);
+        }
+        .action-icon {
+            color: #6b7280;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .action-icon:hover {
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="flex h-full">
+        <!-- 侧边栏 -->
+        <div class="w-64 bg-gray-50 border-r border-gray-200 p-4 flex flex-col" id="sidebar">
+            <div class="flex items-center mb-6">
+                <div class="h-10 w-10 rounded-lg mr-2 bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xl">
+                    <i class="fas fa-code"></i>
+                </div>
+                <h1 class="text-xl font-bold">GenUI</h1>
+            </div>
+            <button class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center justify-center mb-6 transition duration-200">
+                <i class="fas fa-plus mr-2"></i> 新建应用
+            </button>
+            <div class="text-sm font-medium text-gray-500 mb-2">已创建的应用</div>
+            <div class="overflow-y-auto flex-grow">
+                <div class="app-card bg-white rounded-lg p-3 mb-3 cursor-pointer border border-gray-200">
+                    <div class="font-medium">商机管理系统</div>
+                    <div class="text-xs text-gray-500">2分钟前更新</div>
+                </div>
+                <div class="app-card bg-white rounded-lg p-3 mb-3 cursor-pointer border border-gray-200">
+                    <div class="font-medium">项目跟踪看板</div>
+                    <div class="text-xs text-gray-500">昨天</div>
+                </div>
+                <div class="app-card bg-white rounded-lg p-3 mb-3 cursor-pointer border border-gray-200">
+                    <div class="font-medium">客户反馈收集</div>
+                    <div class="text-xs text-gray-500">3天前</div>
+                </div>
+                <div class="app-card bg-white rounded-lg p-3 mb-3 cursor-pointer border border-gray-200">
+                    <div class="font-medium">团队任务分配</div>
+                    <div class="text-xs text-gray-500">上周</div>
+                </div>
+            </div>
+            
+            <!-- 侧边栏底部的用户信息和设置 -->
+            <div class="mt-auto pt-4 border-t border-gray-200">
+                <div class="flex items-center justify-between mb-3">
+                    <button class="text-gray-700 hover:bg-gray-100 rounded-full p-2 transition duration-200 w-10 h-10 flex items-center justify-center">
+                        <i class="fas fa-question-circle"></i>
+                    </button>
+                    <button class="text-gray-700 hover:bg-gray-100 rounded-full p-2 transition duration-200 w-10 h-10 flex items-center justify-center">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="flex items-center">
+                        <div class="h-10 w-10 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 调整大小手柄 -->
+        <div class="resize-handle" id="resize-handle"></div>
+
+        <!-- 主内容区 -->
+        <div class="flex-1 flex flex-col">
+            <!-- 头部导航 -->
+            <!-- <div class="border-b border-gray-200 p-4 flex justify-center items-center">
+                <div class="text-xl font-semibold">主对话</div>
+            </div> -->
+
+            <!-- 输入框区域 -->
+            <div class="border-t border-gray-200 p-4">
+                <div class="max-w-3xl mx-auto">
+                    <div class="text-center mb-8 mt-16">
+                        <h2 class="text-3xl font-bold mb-2">欢迎使用 GenUI</h2>
+                        <p class="text-gray-600">通过 AI 对话快速创建您的应用</p>
+                    </div>
+                </div>
+                <div class="max-w-3xl mx-auto">
+                    <div class="relative">
+                        <textarea class="w-full border border-gray-300 rounded-lg p-3 pr-32 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" 
+                                placeholder="请输入您的需求..." rows="3"></textarea>
+                        <div class="absolute right-3 bottom-3 flex items-center space-x-2">
+                            <select class="model-selector text-sm bg-gray-100 border-0 px-2 py-1">
+                                <option>GPT-4</option>
+                                <option>Claude</option>
+                                <option>Gemini</option>
+                            </select>
+                            <button class="text-gray-500 hover:text-gray-700 p-1 transition duration-200 action-icon">
+                                <i class="fas fa-image"></i>
+                            </button>
+                            <button class="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-8 h-8 flex items-center justify-center transition duration-200">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 快捷对话示例移至输入框下方 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                        <div class="example-card bg-white p-4 border border-gray-200 cursor-pointer">
+                            <div class="font-medium mb-1">商机管理系统</div>
+                            <div class="text-sm text-gray-600">创建商机管理系统，具备商机信息录入管理及销售漏斗可视化展示功能</div>
+                        </div>
+                        <div class="example-card bg-white p-4 border border-gray-200 cursor-pointer">
+                            <div class="font-medium mb-1">客户数据分析看板</div>
+                            <div class="text-sm text-gray-600">创建客户数据分析看板，提供多维度客户分析图表和报表</div>
+                        </div>
+                        <div class="example-card bg-white p-4 border border-gray-200 cursor-pointer">
+                            <div class="font-medium mb-1">团队任务管理系统</div>
+                            <div class="text-sm text-gray-600">构建团队任务管理系统，支持任务分配、进度跟踪和统计报表</div>
+                        </div>
+                        <div class="example-card bg-white p-4 border border-gray-200 cursor-pointer">
+                            <div class="font-medium mb-1">电子商城后台</div>
+                            <div class="text-sm text-gray-600">开发电子商城管理后台，包含商品管理、订单处理和用户管理功能</div>
+                        </div>
+                        <div class="example-card bg-white p-4 border border-gray-200 cursor-pointer">
+                            <div class="font-medium mb-1">招聘管理平台</div>
+                            <div class="text-sm text-gray-600">建立招聘管理平台，包含职位发布、简历筛选、面试安排和统计报表</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 简单的交互效果
+        document.querySelectorAll('.example-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const textContent = this.querySelector('.text-sm').textContent;
+                document.querySelector('textarea').value = textContent;
+            });
+        });
+        
+        // 实现左侧导航栏拖动调整宽度
+        const resizeHandle = document.getElementById('resize-handle');
+        const sidebar = document.getElementById('sidebar');
+        
+        let isResizing = false;
+        
+        resizeHandle.addEventListener('mousedown', function(e) {
+            isResizing = true;
+            document.addEventListener('mousemove', resize);
+            document.addEventListener('mouseup', stopResize);
+        });
+        
+        function resize(e) {
+            if (!isResizing) return;
+            const newWidth = e.clientX;
+            
+            // 设置最小宽度为180px，最大宽度为屏幕的50%
+            if (newWidth > 180 && newWidth < window.innerWidth * 0.5) {
+                sidebar.style.width = newWidth + 'px';
+            }
+        }
+        
+        function stopResize() {
+            isResizing = false;
+            document.removeEventListener('mousemove', resize);
+        }
+    </script>
+</body>
+</html> 
